@@ -1,0 +1,19 @@
+.main-container {
+	margin: 0 auto;
+}
+
+.fr-wrapper,
+.fr-box,
+.fr-element {
+	min-height: 300px;
+}
+
+.fr-toolbar {
+	border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.fr-wrapper {
+	border-radius: 0 0 0.5rem 0.5rem;
+}
+
+
