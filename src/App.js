@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { Calculator, Home, Info, Mail, Shield, Menu, X, Github, Linkedin, Twitter, Facebook, Instagram, Youtube, Globe, MessageCircle } from 'lucide-react';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './contexts/AuthContext';
-import { WebsiteSettingsProvider, useWebsiteSettings, cleanupGlobalFirebaseListener } from './contexts/WebsiteSettingsContext';
+import { WebsiteSettingsProvider, useWebsiteSettings, cleanupGlobalSupabaseListener } from './contexts/WebsiteSettingsContext';
 import About from './About';
 import Contact from './Contact';
 import Privacy from './Privacy';
@@ -47,11 +47,10 @@ const Navbar = () => {
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white/95 backdrop-blur-md shadow-xl border-b border-gray-200' 
-          : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+        ? 'bg-white/95 backdrop-blur-md shadow-xl border-b border-gray-200'
+        : 'bg-transparent'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
@@ -61,15 +60,15 @@ const Navbar = () => {
             className="flex items-center space-x-3"
           >
             {settings.websiteLogo ? (
-              <img 
-                src={settings.websiteLogo} 
-                alt="Logo" 
+              <img
+                src={settings.websiteLogo}
+                alt="Logo"
                 className="w-10 h-10 object-contain"
               />
             ) : (
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Calculator className="w-6 h-6 text-white" />
-            </div>
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Calculator className="w-6 h-6 text-white" />
+              </div>
             )}
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               {settings.websiteTitle}
@@ -106,9 +105,9 @@ const Navbar = () => {
         {/* Mobile Navigation */}
         <motion.div
           initial={{ opacity: 0, height: 0 }}
-          animate={{ 
-            opacity: isMobileMenuOpen ? 1 : 0, 
-            height: isMobileMenuOpen ? 'auto' : 0 
+          animate={{
+            opacity: isMobileMenuOpen ? 1 : 0,
+            height: isMobileMenuOpen ? 'auto' : 0
           }}
           className="md:hidden overflow-hidden bg-white/95 backdrop-blur-md rounded-lg shadow-lg mt-2"
         >
@@ -147,14 +146,14 @@ const HeroSection = () => {
     >
       {/* Background Effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-white/90 to-purple-50/80"></div>
-      
+
       {/* Floating Elements */}
       <motion.div
-        animate={{ 
+        animate={{
           y: [0, -20, 0],
           rotate: [0, 5, 0]
         }}
-        transition={{ 
+        transition={{
           duration: 6,
           repeat: Infinity,
           ease: "easeInOut"
@@ -162,11 +161,11 @@ const HeroSection = () => {
         className="absolute top-20 left-10 w-20 h-20 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full opacity-40"
       />
       <motion.div
-        animate={{ 
+        animate={{
           y: [0, 20, 0],
           rotate: [0, -5, 0]
         }}
-        transition={{ 
+        transition={{
           duration: 8,
           repeat: Infinity,
           ease: "easeInOut"
@@ -174,11 +173,11 @@ const HeroSection = () => {
         className="absolute top-40 right-20 w-16 h-16 bg-gradient-to-r from-purple-200 to-blue-200 rounded-full opacity-40"
       />
       <motion.div
-        animate={{ 
+        animate={{
           y: [0, -15, 0],
           x: [0, 10, 0]
         }}
-        transition={{ 
+        transition={{
           duration: 7,
           repeat: Infinity,
           ease: "easeInOut"
@@ -205,7 +204,7 @@ const HeroSection = () => {
             </>
           )}
         </motion.h1>
-        
+
         <motion.p
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -214,7 +213,7 @@ const HeroSection = () => {
         >
           {settings.heroDescription || 'Calculate, Add or Remove VAT in seconds with our professional-grade calculator'}
         </motion.p>
-        
+
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -229,7 +228,7 @@ const HeroSection = () => {
           >
             Start Calculating
           </motion.button>
-          
+
           <motion.button
             whileHover={{ scale: 1.05, backgroundColor: "rgba(59, 130, 246, 0.1)" }}
             whileTap={{ scale: 0.95 }}
@@ -255,7 +254,7 @@ const VATCalculator = () => {
 
   const calculateVAT = () => {
     setError('');
-    
+
     if (!vatRate || vatRate <= 0 || vatRate > 100) {
       setError('Please enter a valid VAT rate (0-100%)');
       return;
@@ -333,21 +332,19 @@ const VATCalculator = () => {
             <div className="bg-gray-100 rounded-full p-2">
               <button
                 onClick={() => setMode('add')}
-                className={`px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ${
-                  mode === 'add'
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
+                className={`px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ${mode === 'add'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                  : 'text-gray-600 hover:text-blue-600'
+                  }`}
               >
                 Add VAT
               </button>
               <button
                 onClick={() => setMode('remove')}
-                className={`px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ${
-                  mode === 'remove'
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                    : 'text-gray-600 hover:text-blue-600'
-                }`}
+                className={`px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 ${mode === 'remove'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                  : 'text-gray-600 hover:text-blue-600'
+                  }`}
               >
                 Remove VAT
               </button>
@@ -369,7 +366,7 @@ const VATCalculator = () => {
                 placeholder="0.00"
               />
             </div>
-            
+
             <div>
               <label className="block text-lg font-bold text-gray-700 mb-4">
                 VAT Rate (%)
@@ -406,12 +403,12 @@ const VATCalculator = () => {
             >
               Calculate VAT
             </motion.button>
-            
+
             <motion.button
-                whileHover={{ scale: 1.05, backgroundColor: "rgba(59, 130, 246, 0.1)" }}
+              whileHover={{ scale: 1.05, backgroundColor: "rgba(59, 130, 246, 0.1)" }}
               whileTap={{ scale: 0.95 }}
               onClick={clearAll}
-                className="border-2 border-gray-600 text-gray-600 px-10 py-5 rounded-xl font-bold text-xl hover:bg-gray-50 transition-all duration-300"
+              className="border-2 border-gray-600 text-gray-600 px-10 py-5 rounded-xl font-bold text-xl hover:bg-gray-50 transition-all duration-300"
             >
               Clear All
             </motion.button>
@@ -428,7 +425,7 @@ const VATCalculator = () => {
               <h3 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Calculation Results
               </h3>
-              
+
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="text-center bg-white rounded-xl p-6 shadow-lg">
                   <div className="text-lg text-gray-600 mb-2 font-semibold">Net Price</div>
@@ -507,7 +504,7 @@ const InformationCards = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.2 }}
               viewport={{ once: true }}
-              whileHover={{ 
+              whileHover={{
                 y: -15,
                 boxShadow: "0 25px 50px rgba(0,0,0,0.15)"
               }}
@@ -573,54 +570,54 @@ const Footer = () => {
               className="flex items-center space-x-3 mb-6"
             >
               {settings.websiteLogo ? (
-                <img 
-                  src={settings.websiteLogo} 
-                  alt="Logo" 
+                <img
+                  src={settings.websiteLogo}
+                  alt="Logo"
                   className="w-10 h-10 object-contain"
                 />
               ) : (
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <Calculator className="w-6 h-6 text-white" />
-                    </div>
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Calculator className="w-6 h-6 text-white" />
+                </div>
               )}
               <span className="text-3xl font-bold text-white">{settings.websiteTitle}</span>
             </motion.div>
             <p className="text-gray-300 mb-8 max-w-md text-lg leading-relaxed">
               Professional VAT calculations made simple. Calculate, add, or remove VAT with precision and speed using our modern calculator.
             </p>
-            
-                {/* Social Links */}
-                <div className="flex flex-wrap gap-4">
-                  {settings.socialLinks && settings.socialLinks.length > 0 ? (
-                    settings.socialLinks.map((link) => {
-                      const platform = socialPlatforms[link.platform];
-                      const IconComponent = platform?.icon || Globe;
-                      
-                      return (
-                        <motion.a
-                          key={link.id}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          whileHover={{ scale: 1.2, y: -2 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-lg"
-                          style={{ 
-                            backgroundColor: platform?.color || '#6366F1',
-                            boxShadow: `0 4px 14px 0 ${platform?.color || '#6366F1'}40`
-                          }}
-                          title={platform?.name || 'Social Link'}
-                        >
-                          <IconComponent className="w-6 h-6 text-white" />
-                        </motion.a>
-                      );
-                    })
-                  ) : (
-                    <div className="text-gray-400 text-sm">
-                      No social links added yet
-                    </div>
-                  )}
+
+            {/* Social Links */}
+            <div className="flex flex-wrap gap-4">
+              {settings.socialLinks && settings.socialLinks.length > 0 ? (
+                settings.socialLinks.map((link) => {
+                  const platform = socialPlatforms[link.platform];
+                  const IconComponent = platform?.icon || Globe;
+
+                  return (
+                    <motion.a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      whileHover={{ scale: 1.2, y: -2 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-lg"
+                      style={{
+                        backgroundColor: platform?.color || '#6366F1',
+                        boxShadow: `0 4px 14px 0 ${platform?.color || '#6366F1'}40`
+                      }}
+                      title={platform?.name || 'Social Link'}
+                    >
+                      <IconComponent className="w-6 h-6 text-white" />
+                    </motion.a>
+                  );
+                })
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  No social links added yet
                 </div>
+              )}
+            </div>
           </div>
 
           {/* Quick Links */}
@@ -672,89 +669,89 @@ const Footer = () => {
   );
 };
 
-    // Homepage Content Component
-    const HomepageContent = () => {
-      const { settings } = useWebsiteSettings();
+// Homepage Content Component
+const HomepageContent = () => {
+  const { settings } = useWebsiteSettings();
 
-      if (!settings.homepageContent) {
-        return null;
-      }
+  if (!settings.homepageContent) {
+    return null;
+  }
 
-      return (
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+      className="py-24 bg-gradient-to-br from-gray-50 to-blue-50"
+    >
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div
+          className="prose prose-lg max-w-none"
+          dangerouslySetInnerHTML={{ __html: settings.homepageContent }}
+        />
+      </div>
+    </motion.section>
+  );
+};
+
+// Main Calculator Page Component
+const CalculatorPage = () => {
+  const { settings } = useWebsiteSettings();
+
+  // Cleanup for Firebase operations
+  useEffect(() => {
+    return () => {
+      // Component cleanup - no Firebase operations to clean up here
+      // Firebase operations are handled by the context
+    };
+  }, []);
+
+  // Check if maintenance mode is enabled
+  if (settings.maintenanceMode) {
+    return <MaintenanceMode />;
+  }
+
+  return (
+    <div className="App">
+      <SEO
+        title="VAT Calculator - Free Online VAT Calculator | Add & Remove VAT Instantly"
+        description="Professional VAT calculator for instant VAT calculations. Add or remove VAT with precision. Supports all VAT rates. Free, fast, and accurate VAT calculations for businesses and individuals."
+        keywords="VAT calculator, VAT calculation, add VAT, remove VAT, value added tax, tax calculator, business calculator, UK VAT, EU VAT, tax tool, financial calculator, invoice calculator, tax rate calculator"
+        url="https://vatcalc.com"
+      />
+      <Navbar />
+      <HeroSection />
+      <VATCalculator />
+      <HomepageContent />
+      <InformationCards />
+      {settings.footerTopContent ? (
         <motion.section
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="py-24 bg-gradient-to-br from-gray-50 to-blue-50"
+          className="py-16 bg-white"
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div 
+            <div
               className="prose prose-lg max-w-none"
-              dangerouslySetInnerHTML={{ __html: settings.homepageContent }}
+              dangerouslySetInnerHTML={{ __html: settings.footerTopContent }}
             />
           </div>
         </motion.section>
-      );
-    };
-
-    // Main Calculator Page Component
-    const CalculatorPage = () => {
-      const { settings } = useWebsiteSettings();
-
-      // Cleanup for Firebase operations
-      useEffect(() => {
-        return () => {
-          // Component cleanup - no Firebase operations to clean up here
-          // Firebase operations are handled by the context
-        };
-      }, []);
-
-      // Check if maintenance mode is enabled
-      if (settings.maintenanceMode) {
-        return <MaintenanceMode />;
-      }
-
-      return (
-        <div className="App">
-          <SEO 
-            title="VAT Calculator - Free Online VAT Calculator | Add & Remove VAT Instantly"
-            description="Professional VAT calculator for instant VAT calculations. Add or remove VAT with precision. Supports all VAT rates. Free, fast, and accurate VAT calculations for businesses and individuals."
-            keywords="VAT calculator, VAT calculation, add VAT, remove VAT, value added tax, tax calculator, business calculator, UK VAT, EU VAT, tax tool, financial calculator, invoice calculator, tax rate calculator"
-            url="https://vatcalc.com"
-          />
-          <Navbar />
-          <HeroSection />
-          <VATCalculator />
-          <HomepageContent />
-          <InformationCards />
-          {settings.footerTopContent ? (
-            <motion.section
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-              className="py-16 bg-white"
-            >
-              <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div
-                  className="prose prose-lg max-w-none"
-                  dangerouslySetInnerHTML={{ __html: settings.footerTopContent }}
-                />
-              </div>
-            </motion.section>
-          ) : null}
-          <Footer />
-        </div>
-      );
-    };
+      ) : null}
+      <Footer />
+    </div>
+  );
+};
 
 // Main App Component
 function App() {
-  // Cleanup Firebase listener on app unmount
+  // Cleanup Supabase listener on app unmount
   useEffect(() => {
     return () => {
-      cleanupGlobalFirebaseListener();
+      cleanupGlobalSupabaseListener();
     };
   }, []);
 

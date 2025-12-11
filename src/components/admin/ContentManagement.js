@@ -28,34 +28,12 @@ const ContentManagement = () => {
 
 	useEffect(() => {
 		loadContent();
-		// Listen to local changes (if any other tab updates)
-		const onStorage = (e) => {
-			if (e.key === 'websiteSettings' && e.newValue) {
-				try {
-					const data = JSON.parse(e.newValue);
-					if (typeof data.footerTopContent === 'string') {
-						setContent(data.footerTopContent);
-					}
-				} catch {}
-			}
-		};
-		window.addEventListener('storage', onStorage);
-		return () => window.removeEventListener('storage', onStorage);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
+	}, [settings.footerTopContent]);
 
 	const loadContent = () => {
 		try {
-			// Prefer context (covers Firebase or localStorage)
 			if (typeof settings.footerTopContent === 'string') {
 				setContent(settings.footerTopContent);
-				return;
-			}
-			// Fallback to localStorage directly
-			const savedSettings = localStorage.getItem('websiteSettings');
-			if (savedSettings) {
-				const data = JSON.parse(savedSettings);
-				setContent(data.footerTopContent || '');
 			}
 		} catch (err) {
 			console.warn('Error loading content:', err);
@@ -67,9 +45,7 @@ const ContentManagement = () => {
 		setSuccess(null);
 		try {
 			await saveSettings({ footerTopContent: content });
-			setSuccess('Content saved successfully!');
-			// Dispatch a custom event for any listeners
-			window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: { footerTopContent: content } }));
+			setSuccess('Content saved successfully to Supabase!');
 		} catch (err) {
 			setError('Error saving content: ' + (err?.message || 'Unknown error'));
 		}

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Editor } from '@tinymce/tinymce-react';
-import { 
-  Home, 
-  Save, 
-  RotateCcw, 
+import {
+  Home,
+  Save,
+  RotateCcw,
   Eye,
   FileText,
   AlertCircle
@@ -12,7 +12,7 @@ import {
 import { useWebsiteSettings } from '../../contexts/WebsiteSettingsContext';
 
 export default function HomepageContentEditor() {
-  const { settings, saving, firebaseAvailable, saveSettings } = useWebsiteSettings();
+  const { settings, saving, supabaseAvailable, saveSettings } = useWebsiteSettings();
   const [content, setContent] = useState(settings.homepageContent || '');
   const [hasChanges, setHasChanges] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -31,7 +31,7 @@ export default function HomepageContentEditor() {
     try {
       await saveSettings({ homepageContent: content });
       setHasChanges(false);
-      setSaveMessage('Homepage content saved successfully!');
+      setSaveMessage('Homepage content saved successfully to Supabase!');
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
       setSaveMessage('Error saving homepage content. Please try again.');
@@ -69,9 +69,9 @@ export default function HomepageContentEditor() {
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${firebaseAvailable ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${supabaseAvailable ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className="text-sm text-gray-600">
-                {firebaseAvailable ? 'Connected to Firebase' : 'Using local storage'}
+                {supabaseAvailable ? 'Connected to Supabase' : 'Supabase unavailable'}
               </span>
             </div>
           </div>
@@ -96,17 +96,16 @@ export default function HomepageContentEditor() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={togglePreview}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    previewMode 
-                      ? 'bg-blue-100 text-blue-700' 
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${previewMode
+                      ? 'bg-blue-100 text-blue-700'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   <Eye className="w-4 h-4" />
                   <span>{previewMode ? 'Edit Mode' : 'Preview Mode'}</span>
@@ -118,7 +117,7 @@ export default function HomepageContentEditor() {
               <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Content Preview</h4>
                 {content ? (
-                  <div 
+                  <div
                     className="prose max-w-none"
                     dangerouslySetInnerHTML={{ __html: content }}
                   />
@@ -186,9 +185,9 @@ export default function HomepageContentEditor() {
               <p className="text-sm text-gray-600 mb-4">
                 This is how your content will appear below the calculator on the homepage.
               </p>
-              
+
               {content ? (
-                <div 
+                <div
                   className="prose max-w-none border border-gray-200 rounded-lg p-4 bg-gray-50"
                   dangerouslySetInnerHTML={{ __html: content }}
                 />
@@ -222,11 +221,10 @@ export default function HomepageContentEditor() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      saveMessage.includes('successfully')
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${saveMessage.includes('successfully')
                         ? 'bg-green-100 text-green-700'
                         : 'bg-red-100 text-red-700'
-                    }`}
+                      }`}
                   >
                     {saveMessage}
                   </motion.div>

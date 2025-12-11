@@ -1,13 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
-import { safeFirebaseOperation, safeFirebaseListener, withTimeout } from '../utils/firebaseHelpers';
+import { getAllContent, saveContent as saveContentToSupabase, subscribeToAllContent, initializeContentTable } from '../services/contentService';
 
 const WebsiteSettingsContext = createContext();
 
 export function useWebsiteSettings() {
   const context = useContext(WebsiteSettingsContext);
-  
+
   // Provide default values if context is not available
   if (!context) {
     return {
@@ -16,23 +14,27 @@ export function useWebsiteSettings() {
         websiteTitle: 'VATCalc',
         websiteLogo: null,
         logoFile: null,
+        homepageContent: '',
+        footerTopContent: '',
+        heroHeading: '',
+        heroDescription: '',
+        socialLinks: [],
       },
       loading: false,
       saving: false,
-      firebaseAvailable: false,
-      updateSettings: () => {},
-      saveSettings: async () => {},
-      toggleMaintenanceMode: () => {},
-      updateWebsiteTitle: () => {},
-      updateWebsiteLogo: () => {},
+      supabaseAvailable: false,
+      updateSettings: () => { },
+      saveSettings: async () => { },
+      toggleMaintenanceMode: () => { },
+      updateWebsiteTitle: () => { },
+      updateWebsiteLogo: () => { },
     };
   }
-  
+
   return context;
 }
 
-// Singleton pattern to prevent multiple listeners
-let globalListener = null;
+// Global settings state
 let globalSettings = {
   maintenanceMode: false,
   websiteTitle: 'VATCalc',
@@ -46,182 +48,104 @@ let globalSettings = {
 };
 
 // Global cleanup function
-export const cleanupGlobalFirebaseListener = () => {
-  if (globalListener) {
+let globalUnsubscribe = null;
+
+export const cleanupGlobalSupabaseListener = () => {
+  if (globalUnsubscribe) {
     try {
-      globalListener();
+      globalUnsubscribe();
     } catch (error) {
-      if (error.name !== 'AbortError' && error.code !== 'aborted') {
-        console.error('Error cleaning up global listener:', error);
-      }
+      console.error('Error cleaning up global listener:', error);
     }
-    globalListener = null;
+    globalUnsubscribe = null;
   }
 };
 
 export function WebsiteSettingsProvider({ children }) {
   const [settings, setSettings] = useState(globalSettings);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [firebaseAvailable, setFirebaseAvailable] = useState(false);
-  
+  const [supabaseAvailable, setSupabaseAvailable] = useState(false);
+
   // Use refs to track component state
   const isMountedRef = useRef(true);
-  const listenerCleanupRef = useRef(null);
 
-  // Firebase document reference
-  const settingsDocRef = doc(db, 'settings', 'website');
-
-  // Load from localStorage immediately as fallback
+  // Initialize Supabase and load content
   useEffect(() => {
-    const fallbackSettings = localStorage.getItem('websiteSettings');
-    if (fallbackSettings) {
-      try {
-        const parsed = JSON.parse(fallbackSettings);
-        globalSettings = { ...globalSettings, ...parsed };
-        setSettings(globalSettings);
-      } catch (parseError) {
-        console.error('Error parsing fallback settings:', parseError);
-      }
-    }
-  }, []);
-
-  // Initialize Firebase listener (singleton pattern)
-  useEffect(() => {
-    // Only create one global listener
-    if (globalListener) {
-      // Update this component with current global settings
-      setSettings(globalSettings);
-      setLoading(false);
-      return;
-    }
-
-    const initializeFirebase = async () => {
-      // Check if component is still mounted before starting Firebase operations
+    const initializeSupabase = async () => {
       if (!isMountedRef.current) return;
 
       try {
-        // First, try to get the document
-        const docSnap = await safeFirebaseOperation(
-          () => withTimeout(getDoc(settingsDocRef), 3000, 'Get settings document'),
-          'Get settings document'
-        );
+        // Check if Supabase table is accessible
+        const isAvailable = await initializeContentTable();
 
-        // Check again if component is still mounted
         if (!isMountedRef.current) return;
 
-        if (!docSnap) {
-          setFirebaseAvailable(false);
+        if (!isAvailable) {
+          console.error('Supabase table not accessible');
+          setSupabaseAvailable(false);
           setLoading(false);
           return;
         }
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          globalSettings = {
-            ...globalSettings,
-            maintenanceMode: data.maintenanceMode || false,
-            websiteTitle: data.websiteTitle || 'VATCalc',
-            websiteLogo: data.websiteLogo || null,
-          };
-        } else {
-          // Create initial document if it doesn't exist
-          await safeFirebaseOperation(
-            () => withTimeout(setDoc(settingsDocRef, {
-              maintenanceMode: false,
-              websiteTitle: 'VATCalc',
-              websiteLogo: null,
-              socialLinks: [],
-              homepageContent: '',
-              footerTopContent: '',
-              heroHeading: '',
-              heroDescription: '',
-              createdAt: new Date().toISOString(),
-            }), 3000, 'Create initial document'),
-            'Create initial document'
-          );
-        }
+        // Load all content from Supabase
+        const contentData = await getAllContent();
 
-        // Check again if component is still mounted before setting up listener
         if (!isMountedRef.current) return;
 
-        // Set up the global real-time listener with AbortController
-        const abortController = new AbortController();
-        
-        const { safeListener, cleanup } = safeFirebaseListener(
-          (doc) => {
-            if (abortController.signal.aborted || !isMountedRef.current) return;
-            
-            if (doc.exists()) {
-              const data = doc.data();
-              globalSettings = {
-                ...globalSettings,
-                maintenanceMode: data.maintenanceMode || false,
-                websiteTitle: data.websiteTitle || 'VATCalc',
-                websiteLogo: data.websiteLogo || null,
-                socialLinks: data.socialLinks || [],
-                homepageContent: data.homepageContent || '',
-                footerTopContent: data.footerTopContent || '',
-                heroHeading: data.heroHeading || '',
-                heroDescription: data.heroDescription || '',
-              };
-              
-              // Update all components using the context
-              if (isMountedRef.current) {
-                setSettings(globalSettings);
-              }
-            }
-          },
-          () => {
-            // Cleanup function
-            if (!abortController.signal.aborted) {
-              abortController.abort();
-            }
-          },
-          'Settings listener'
-        );
-
-        // Set up the listener with proper error handling
-        const unsubscribe = onSnapshot(settingsDocRef, safeListener, (error) => {
-          if (abortController.signal.aborted || !isMountedRef.current) return;
-          
-          if (error.name !== 'AbortError' && error.code !== 'aborted' && !error.message?.includes('aborted')) {
-            console.error('Settings listener error:', error);
-          }
-        });
-
-        globalListener = () => {
-          try {
-            abortController.abort();
-            cleanup();
-            unsubscribe();
-          } catch (error) {
-            if (error.name !== 'AbortError' && error.code !== 'aborted') {
-              console.error('Error cleaning up global listener:', error);
-            }
-          }
+        // Update global settings with Supabase data
+        globalSettings = {
+          ...globalSettings,
+          homepageContent: contentData.homepage_content || '',
+          footerTopContent: contentData.footer_top_content || '',
+          heroHeading: contentData.hero_heading || '',
+          heroDescription: contentData.hero_description || '',
+          websiteTitle: contentData.website_title || 'VATCalc',
+          websiteLogo: contentData.website_logo || null,
+          maintenanceMode: contentData.maintenance_mode === 'true' || false,
+          socialLinks: contentData.social_links ? JSON.parse(contentData.social_links) : [],
         };
 
-        // Final check before setting state
-        if (isMountedRef.current) {
-          setFirebaseAvailable(true);
-          setLoading(false);
-          setSettings(globalSettings);
+        setSettings(globalSettings);
+        setSupabaseAvailable(true);
+
+        // Set up real-time subscription
+        if (globalUnsubscribe) {
+          globalUnsubscribe();
         }
 
+        globalUnsubscribe = subscribeToAllContent(async (updatedContent) => {
+          if (!isMountedRef.current) return;
+
+          globalSettings = {
+            ...globalSettings,
+            homepageContent: updatedContent.homepage_content || '',
+            footerTopContent: updatedContent.footer_top_content || '',
+            heroHeading: updatedContent.hero_heading || '',
+            heroDescription: updatedContent.hero_description || '',
+            websiteTitle: updatedContent.website_title || 'VATCalc',
+            websiteLogo: updatedContent.website_logo || null,
+            maintenanceMode: updatedContent.maintenance_mode === 'true' || false,
+            socialLinks: updatedContent.social_links ? JSON.parse(updatedContent.social_links) : [],
+          };
+
+          setSettings(globalSettings);
+        });
+
+        setLoading(false);
       } catch (error) {
+        console.error('Error initializing Supabase:', error);
         if (isMountedRef.current) {
-          console.error('Error initializing Firebase:', error);
-          setFirebaseAvailable(false);
+          setSupabaseAvailable(false);
           setLoading(false);
         }
       }
     };
 
-    // Add a small delay to prevent immediate Firebase calls
+    // Add a small delay to prevent immediate calls
     const initTimeout = setTimeout(() => {
       if (isMountedRef.current) {
-        initializeFirebase();
+        initializeSupabase();
       }
     }, 100);
 
@@ -238,13 +162,10 @@ export function WebsiteSettingsProvider({ children }) {
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      if (listenerCleanupRef.current) {
-        listenerCleanupRef.current();
-      }
     };
   }, []);
 
-  // Save settings to Firebase
+  // Save settings to Supabase
   const saveSettings = async (newSettings) => {
     if (saving) {
       console.warn('Save operation already in progress');
@@ -252,47 +173,72 @@ export function WebsiteSettingsProvider({ children }) {
     }
 
     setSaving(true);
-    
-    try {
-      const settingsToSave = {
-        ...globalSettings,
-        ...newSettings,
-        updatedAt: new Date().toISOString(),
-      };
 
-      // Update global settings immediately
+    try {
+      // Update global settings immediately for optimistic UI
       globalSettings = { ...globalSettings, ...newSettings };
       setSettings(globalSettings);
 
-      if (firebaseAvailable) {
-        await safeFirebaseOperation(
-          () => withTimeout(
-            setDoc(settingsDocRef, settingsToSave, { merge: true }),
-            5000,
-            'Save settings'
-          ),
-          'Save settings to Firebase'
-        );
-      } else {
-        // Fallback to localStorage if Firebase is not available
-        localStorage.setItem('websiteSettings', JSON.stringify(settingsToSave));
+      if (!supabaseAvailable) {
+        throw new Error('Supabase is not available');
       }
-      
+
+      // Save each setting to Supabase
+      const savePromises = [];
+
+      if (newSettings.homepageContent !== undefined) {
+        savePromises.push(
+          saveContentToSupabase('homepage_content', newSettings.homepageContent)
+        );
+      }
+
+      if (newSettings.footerTopContent !== undefined) {
+        savePromises.push(
+          saveContentToSupabase('footer_top_content', newSettings.footerTopContent)
+        );
+      }
+
+      if (newSettings.heroHeading !== undefined) {
+        savePromises.push(
+          saveContentToSupabase('hero_heading', newSettings.heroHeading)
+        );
+      }
+
+      if (newSettings.heroDescription !== undefined) {
+        savePromises.push(
+          saveContentToSupabase('hero_description', newSettings.heroDescription)
+        );
+      }
+
+      if (newSettings.websiteTitle !== undefined) {
+        savePromises.push(
+          saveContentToSupabase('website_title', newSettings.websiteTitle)
+        );
+      }
+
+      if (newSettings.websiteLogo !== undefined) {
+        savePromises.push(
+          saveContentToSupabase('website_logo', newSettings.websiteLogo || '')
+        );
+      }
+
+      if (newSettings.maintenanceMode !== undefined) {
+        savePromises.push(
+          saveContentToSupabase('maintenance_mode', String(newSettings.maintenanceMode))
+        );
+      }
+
+      if (newSettings.socialLinks !== undefined) {
+        savePromises.push(
+          saveContentToSupabase('social_links', JSON.stringify(newSettings.socialLinks))
+        );
+      }
+
+      await Promise.all(savePromises);
+
     } catch (error) {
       console.error('Error saving website settings:', error);
-      // Try localStorage fallback
-      try {
-        const settingsToSave = {
-          ...globalSettings,
-          ...newSettings,
-          updatedAt: new Date().toISOString(),
-        };
-        localStorage.setItem('websiteSettings', JSON.stringify(settingsToSave));
-        setFirebaseAvailable(false);
-      } catch (fallbackError) {
-        console.error('Fallback save also failed:', fallbackError);
-        throw new Error(`Failed to save settings: ${error.message}`);
-      }
+      throw new Error(`Failed to save settings: ${error.message}`);
     } finally {
       setSaving(false);
     }
@@ -303,9 +249,9 @@ export function WebsiteSettingsProvider({ children }) {
   };
 
   const toggleMaintenanceMode = () => {
-    setSettings(prev => ({ 
-      ...prev, 
-      maintenanceMode: !prev.maintenanceMode 
+    setSettings(prev => ({
+      ...prev,
+      maintenanceMode: !prev.maintenanceMode
     }));
   };
 
@@ -317,64 +263,33 @@ export function WebsiteSettingsProvider({ children }) {
     if (logoFile) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setSettings(prev => ({ 
-          ...prev, 
+        setSettings(prev => ({
+          ...prev,
           websiteLogo: e.target.result,
-          logoFile: logoFile 
+          logoFile: logoFile
         }));
       };
       reader.readAsDataURL(logoFile);
     }
   };
 
-
   const deleteWebsiteLogo = async () => {
     try {
       // Reset logo to null (default state)
-      const newSettings = {
-        ...globalSettings,
-        websiteLogo: null,
-        logoFile: null,
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Update global settings immediately
       globalSettings = { ...globalSettings, websiteLogo: null, logoFile: null };
       setSettings(globalSettings);
 
-      // Save to Firebase or localStorage
-      if (firebaseAvailable) {
-        await safeFirebaseOperation(
-          () => withTimeout(
-            setDoc(settingsDocRef, newSettings, { merge: true }),
-            5000,
-            'Delete logo'
-          ),
-          'Delete logo from Firebase'
-        );
+      // Save to Supabase
+      if (supabaseAvailable) {
+        await saveContentToSupabase('website_logo', '');
       } else {
-        // Fallback to localStorage
-        localStorage.setItem('websiteSettings', JSON.stringify(newSettings));
+        throw new Error('Supabase is not available');
       }
 
       return true; // Success
     } catch (error) {
       console.error('Error deleting logo:', error);
-      // Try localStorage fallback
-      try {
-        const newSettings = {
-          ...globalSettings,
-          websiteLogo: null,
-          logoFile: null,
-          updatedAt: new Date().toISOString(),
-        };
-        localStorage.setItem('websiteSettings', JSON.stringify(newSettings));
-        setFirebaseAvailable(false);
-        return true;
-      } catch (fallbackError) {
-        console.error('Fallback delete also failed:', fallbackError);
-        throw new Error(`Failed to delete logo: ${error.message}`);
-      }
+      throw new Error(`Failed to delete logo: ${error.message}`);
     }
   };
 
@@ -382,7 +297,8 @@ export function WebsiteSettingsProvider({ children }) {
     settings,
     loading,
     saving,
-    firebaseAvailable,
+    supabaseAvailable,
+    firebaseAvailable: supabaseAvailable, // For backward compatibility
     updateSettings,
     saveSettings,
     toggleMaintenanceMode,
