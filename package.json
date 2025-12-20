@@ -14,6 +14,8 @@
     "framer-motion": "^12.23.24",
     "froala-editor": "^4.7.0",
     "lucide-react": "^0.545.0",
+    "prismjs": "^1.30.0",
+    "quill": "^2.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-froala-wysiwyg": "^4.7.0",
