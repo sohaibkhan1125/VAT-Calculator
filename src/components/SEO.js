@@ -52,6 +52,7 @@ const SEO = ({
       <meta name="robots" content={robots} />
       <meta name="language" content="English" />
       <meta name="revisit-after" content="7 days" />
+      <meta name="google-site-verification" content="0RTDuC178wNXNmUu5SNDnj8B8eAnlQP4IvNEZ9LUYuw" />
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
