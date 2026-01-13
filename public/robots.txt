@@ -23,4 +23,4 @@ Allow: /contact
 Allow: /privacy
 
 # Sitemap location
-Sitemap: https://vatcalc.com/sitemap.xml
+Sitemap: https://www.calculatevat.org/sitemap.xml
