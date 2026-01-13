@@ -7,7 +7,7 @@
   
   <!-- Homepage -->
   <url>
-    <loc>https://vatcalc.com/</loc>
+    <loc>https://www.calculatevat.org/</loc>
     <lastmod>2026-01-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
@@ -15,7 +15,7 @@
   
   <!-- About Page -->
   <url>
-    <loc>https://vatcalc.com/about</loc>
+    <loc>https://www.calculatevat.org/about</loc>
     <lastmod>2026-01-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -23,7 +23,7 @@
   
   <!-- Contact Page -->
   <url>
-    <loc>https://vatcalc.com/contact</loc>
+    <loc>https://www.calculatevat.org/contact</loc>
     <lastmod>2026-01-09</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
@@ -31,7 +31,7 @@
   
   <!-- Privacy Policy -->
   <url>
-    <loc>https://vatcalc.com/privacy</loc>
+    <loc>https://www.calculatevat.org/privacy</loc>
     <lastmod>2026-01-09</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.6</priority>
